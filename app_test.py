@@ -12,97 +12,26 @@
 # compare -s and -v when running the tests
 # run coverage tests with python -m pytest --cov
 
-import pytest
-from app import app, Loan
+import app_test
+# from app import app, Loan
 
+# initialze variables to be used in test
+loan_amount = 100000
+years = 30
+interest = 0.06
+monthly_payment = 599.55
 
-@pytest.fixture
-def client():
-    with app.test_client() as client:
-        yield client
+# unit tests
+def test_calculate_monthly_interest_rate():
+    assert calculate_monthly_interest_rate(interest) == 0.005
 
+def test_calculate_number_of_payments():
+    assert calculate_number_of_payments(years) == 360
 
-# Unit Tests
-def test_loan_discount_factor():
-    """
-    GIVEN a user enters their loan details
-    WHEN the loan object's calculateDiscountFactor method is called
-    THEN the discount factor is accurately calculated
-    """
-    loan = Loan(loanAmount=100000, numberYears=30, annualRate=0.06)
-    loan.calculateDiscountFactor()
-    print("\r")
-    print(" -- calculateDiscountFactor method unit test")
-    assert loan.getDiscountFactor() == pytest.approx(
-        166.79, rel=1e-3
-    )  # approx two decimal places
+def test_calculate_monthly_payment():
+    assert round(calculate_monthly_payment(loan_amount, interest, years), 2) == monthly_payment
 
-
-def test_loan_payment():
-    """
-    GIVEN a user enters their loan details
-    WHEN the loan object's calculateLoanPmt method is called
-    THEN the loan payment is accurately calculated
-    """
-    loan = Loan(loanAmount=100000, numberYears=30, annualRate=0.06)
-    loan.calculateLoanPmt()
-    print("\r")
-    print(" -- calculateLoanPmt method unit test")
-    assert loan.getLoanPmt() == pytest.approx(
-        599.55, rel=1e-3
-    )  # approx two decimal places
-
-
-# Functional Tests
-def test_home_page(client):
-    """
-    GIVEN a user visits the home page
-    WHEN the page loads
-    THEN the user sees "Loan Calculator" in the page body
-    """
-    response = client.get("/")
-    assert response.status_code == 200
-    print("\r")
-    print(" -- home page loads functional test")
-    assert b"Loan Calculator" in response.data
-
-
-def test_calculate_loan_payment(client):
-    """
-    GIVEN a user enters their loan details
-    WHEN the user clicks the calculate button
-    THEN the user sees the monthly payment for their loan
-    """
-    response = client.post(
-        "/", data={"loanAmt": "100000", "lengthOfLoan": "30", "intRate": "0.06"}
-    )
-    print("\r")
-    print(" -- calculate loan functional test")
-    assert response.status_code == 200
-    assert b"$599.55" in response.data
-
-
-# Integration Test
-def test_full_loan_calculation(client):
-    """
-    GIVEN a user enters their loan details
-    WHEN the user clicks the calculate button
-    THEN the user sees the monthly payment for their loan and the amortization table
-    """
-    response = client.post(
-        "/", data={"loanAmt": "100000", "lengthOfLoan": "30", "intRate": "0.06"}
-    )
-    assert response.status_code == 200
-
-    data = {
-        "month": "1",
-        "monthlyLoanPayment": "$599.55",
-        "paymentToPrincipal": "$99.55",
-        "monthlyInterestPayment": "$500.00",
-        "monthlyLoanBalance": "$99,900.45",
-        "totalInterestPaid": "$500.00",
-    }
-    print("\r")
-    print(" -- full loan calculation and amortization table integration test")
-    for field, value in data.items():
-        assert value.encode() in response.data
+# functional test
+def test_calculate_loan_payment_plan():
+    expected_output = f"Loan amount: ${loan_amount:.2f}\nInterest rate: {interest*100:.2f}%\nYears: {years}\nMonthly payment: ${monthly_payment:.2f}\nTotal payment: ${monthly_payment*360:.2f}\n"
+    assert calculate_loan_payment_plan(loan_amount, interest, years) == expected_output
